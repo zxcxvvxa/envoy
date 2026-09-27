@@ -1,0 +1,125 @@
+static_resources:
+  listeners:
+  - name: listener_0
+    address:
+      socket_address:
+        address: 0.0.0.0
+        port_value: 8080
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: ingress_http
+          route_config:
+            name: local_route
+            virtual_hosts:
+            - name: local_service
+              domains: ["*"]
+              routes:
+
+              # --- WebSocket Routes ---
+              - match:
+                  prefix: "/trws"
+                route:
+                  cluster: xray_trojan_ws
+                  upgrade_configs:
+                  - upgrade_type: websocket
+
+              - match:
+                  prefix: "/vlws"
+                route:
+                  cluster: xray_vless_ws
+                  upgrade_configs:
+                  - upgrade_type: websocket
+
+              # --- XHTTP Routes (Supports auto, stream-one, stream-up, packet-up) ---
+              - match:
+                  prefix: "/trxh"
+                route:
+                  cluster: xray_trojan_xh
+                  timeout: 0s
+                  idle_timeout: 0s
+
+              - match:
+                  prefix: "/vlxh"
+                route:
+                  cluster: xray_vless_xh
+                  timeout: 0s
+                  idle_timeout: 0s
+
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+  clusters:
+  # 1. Trojan WebSocket Backend (10086)
+  - name: xray_trojan_ws
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: xray_trojan_ws
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: 127.0.0.1
+                port_value: 10086
+
+  # 2. VLESS WebSocket Backend (10085)
+  - name: xray_vless_ws
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: xray_vless_ws
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: 127.0.0.1
+                port_value: 10085
+
+  # 3. Trojan XHTTP Backend (10087)
+  - name: xray_trojan_xh
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options: {}
+    load_assignment:
+      cluster_name: xray_trojan_xh
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: 127.0.0.1
+                port_value: 10087
+
+  # 4. VLESS XHTTP Backend (10088)
+  - name: xray_vless_xh
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options: {}
+    load_assignment:
+      cluster_name: xray_vless_xh
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: 127.0.0.1
+                port_value: 10088
