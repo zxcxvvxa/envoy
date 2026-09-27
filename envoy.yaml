@@ -6,8 +6,15 @@ static_resources:
         address: 0.0.0.0
         port_value: 8080
 
-    # SAFE ENHANCEMENT 1: Increase stream buffer to 8MB to eliminate throughput bottlenecks
+    # Maximize buffer limits without crashing Xray (8MB per stream)
     per_stream_buffer_limit_bytes: 8388608
+
+    # Low-latency TCP socket settings
+    socket_options:
+    - state: STATE_PREBIND
+      level: 6 # SOL_TCP
+      name: 1  # TCP_NODELAY
+      int_value: 1
 
     filter_chains:
     - filters:
@@ -16,6 +23,12 @@ static_resources:
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           stat_prefix: ingress_http
           use_remote_address: true
+
+          # Maximize HTTP/2 throughput settings for downstream clients
+          http2_protocol_options:
+            max_concurrent_streams: 2147483647
+            initial_stream_window_size: 1048576     # 1MB Stream Window
+            initial_connection_window_size: 2097152   # 2MB Connection Window
 
           route_config:
             name: local_route
@@ -62,7 +75,7 @@ static_resources:
   clusters:
   # 1. Trojan WebSocket Backend (10086)
   - name: xray_trojan_ws
-    connect_timeout: 2s
+    connect_timeout: 1s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
     load_assignment:
@@ -77,7 +90,7 @@ static_resources:
 
   # 2. VLESS WebSocket Backend (10085)
   - name: xray_vless_ws
-    connect_timeout: 2s
+    connect_timeout: 1s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
     load_assignment:
@@ -92,7 +105,7 @@ static_resources:
 
   # 3. Trojan XHTTP Backend (10087)
   - name: xray_trojan_xh
-    connect_timeout: 2s
+    connect_timeout: 1s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
     typed_extension_protocol_options:
@@ -100,10 +113,9 @@ static_resources:
         "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicit_http_config:
           http2_protocol_options:
-            # SAFE ENHANCEMENT 2: Keep-alive ping prevents connection drops without breaking flow control
-            connection_keepalive:
-              interval: 30s
-              timeout: 5s
+            max_concurrent_streams: 2147483647
+            initial_stream_window_size: 1048576     # 1MB Upstream Stream Window
+            initial_connection_window_size: 2097152   # 2MB Upstream Connection Window
     load_assignment:
       cluster_name: xray_trojan_xh
       endpoints:
@@ -116,7 +128,7 @@ static_resources:
 
   # 4. VLESS XHTTP Backend (10088)
   - name: xray_vless_xh
-    connect_timeout: 2s
+    connect_timeout: 1s
     type: STRICT_DNS
     lb_policy: ROUND_ROBIN
     typed_extension_protocol_options:
@@ -124,9 +136,9 @@ static_resources:
         "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicit_http_config:
           http2_protocol_options:
-            connection_keepalive:
-              interval: 30s
-              timeout: 5s
+            max_concurrent_streams: 2147483647
+            initial_stream_window_size: 1048576     # 1MB Upstream Stream Window
+            initial_connection_window_size: 2097152   # 2MB Upstream Connection Window
     load_assignment:
       cluster_name: xray_vless_xh
       endpoints:
