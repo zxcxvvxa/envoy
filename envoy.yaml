@@ -18,6 +18,12 @@ static_resources:
               domains: ["*"]
               routes:
 
+              # --- Subscription Server Route ---
+              - match:
+                  prefix: "/sub"
+                route:
+                  cluster: sub_server_backend
+
               # --- WebSocket Routes ---
               - match:
                   prefix: "/trws"
@@ -54,7 +60,22 @@ static_resources:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
   clusters:
-  # 1. Trojan WebSocket Backend (10086)
+  # 1. Python Subscription Backend (127.0.0.1:8000)
+  - name: sub_server_backend
+    connect_timeout: 2s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: sub_server_backend
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: 127.0.0.1
+                port_value: 8000
+
+  # 2. Trojan WebSocket Backend (10086)
   - name: xray_trojan_ws
     connect_timeout: 2s
     type: STATIC
@@ -68,7 +89,7 @@ static_resources:
               pipe:
                 path: /dev/shm/trws.sock
 
-  # 2. VLESS WebSocket Backend (10085)
+  # 3. VLESS WebSocket Backend (10085)
   - name: xray_vless_ws
     connect_timeout: 2s
     type: STATIC
@@ -82,7 +103,7 @@ static_resources:
               pipe:
                 path: /dev/shm/vlws.sock
 
-  # 3. Trojan XHTTP Backend (10087)
+  # 4. Trojan XHTTP Backend (10087)
   - name: xray_trojan_xh
     connect_timeout: 2s
     type: STATIC
@@ -101,7 +122,7 @@ static_resources:
               pipe:
                 path: /dev/shm/trxh.sock
 
-  # 4. VLESS XHTTP Backend (10088)
+  # 5. VLESS XHTTP Backend (10088)
   - name: xray_vless_xh
     connect_timeout: 2s
     type: STATIC
