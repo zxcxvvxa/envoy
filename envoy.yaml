@@ -5,12 +5,18 @@ static_resources:
       socket_address:
         address: 0.0.0.0
         port_value: 8080
+
+    # SAFE ENHANCEMENT 1: Increase stream buffer to 8MB to eliminate throughput bottlenecks
+    per_stream_buffer_limit_bytes: 8388608
+
     filter_chains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           stat_prefix: ingress_http
+          use_remote_address: true
+
           route_config:
             name: local_route
             virtual_hosts:
@@ -33,7 +39,7 @@ static_resources:
                   upgrade_configs:
                   - upgrade_type: websocket
 
-              # --- XHTTP Routes (Supports auto, stream-one, stream-up, packet-up) ---
+              # --- XHTTP Routes ---
               - match:
                   prefix: "/trxh"
                 route:
@@ -93,7 +99,11 @@ static_resources:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicit_http_config:
-          http2_protocol_options: {}
+          http2_protocol_options:
+            # SAFE ENHANCEMENT 2: Keep-alive ping prevents connection drops without breaking flow control
+            connection_keepalive:
+              interval: 30s
+              timeout: 5s
     load_assignment:
       cluster_name: xray_trojan_xh
       endpoints:
@@ -113,7 +123,10 @@ static_resources:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicit_http_config:
-          http2_protocol_options: {}
+          http2_protocol_options:
+            connection_keepalive:
+              interval: 30s
+              timeout: 5s
     load_assignment:
       cluster_name: xray_vless_xh
       endpoints:
