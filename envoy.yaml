@@ -60,7 +60,7 @@ static_resources:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
   clusters:
-  # 1. Python Subscription Backend (127.0.0.1:8000)
+  # 1. Subscription Server Backend (8000)
   - name: sub_server_backend
     connect_timeout: 2s
     type: STRICT_DNS
@@ -78,7 +78,7 @@ static_resources:
   # 2. Trojan WebSocket Backend (10086)
   - name: xray_trojan_ws
     connect_timeout: 2s
-    type: STATIC
+    type: STRICT_DNS
     lb_policy: ROUND_ROBIN
     load_assignment:
       cluster_name: xray_trojan_ws
@@ -86,13 +86,14 @@ static_resources:
       - lb_endpoints:
         - endpoint:
             address:
-              pipe:
-                path: /dev/shm/trws.sock
+              socket_address:
+                address: 127.0.0.1
+                port_value: 10086
 
   # 3. VLESS WebSocket Backend (10085)
   - name: xray_vless_ws
     connect_timeout: 2s
-    type: STATIC
+    type: STRICT_DNS
     lb_policy: ROUND_ROBIN
     load_assignment:
       cluster_name: xray_vless_ws
@@ -100,13 +101,14 @@ static_resources:
       - lb_endpoints:
         - endpoint:
             address:
-              pipe:
-                path: /dev/shm/vlws.sock
+              socket_address:
+                address: 127.0.0.1
+                port_value: 10085
 
   # 4. Trojan XHTTP Backend (10087)
   - name: xray_trojan_xh
     connect_timeout: 2s
-    type: STATIC
+    type: STRICT_DNS
     lb_policy: ROUND_ROBIN
     typed_extension_protocol_options:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -119,13 +121,14 @@ static_resources:
       - lb_endpoints:
         - endpoint:
             address:
-              pipe:
-                path: /dev/shm/trxh.sock
+              socket_address:
+                address: 127.0.0.1
+                port_value: 10087
 
   # 5. VLESS XHTTP Backend (10088)
   - name: xray_vless_xh
     connect_timeout: 2s
-    type: STATIC
+    type: STRICT_DNS
     lb_policy: ROUND_ROBIN
     typed_extension_protocol_options:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -138,5 +141,6 @@ static_resources:
       - lb_endpoints:
         - endpoint:
             address:
-              pipe:
-                path: /dev/shm/vlxh.sock
+              socket_address:
+                address: 127.0.0.1
+                port_value: 10088
