@@ -1,12 +1,30 @@
+# VCS & System Files
 .git
 .gitignore
-*.md
-*.log
-*.zip
-*.tar
-*.tar.gz
-tmp/
-temp/
-node_modules
+.gitattributes
 .DS_Store
 Thumbs.db
+
+# Documentation & Local Editor Configs
+*.md
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker / Deployment Files
+Dockerfile
+docker-compose*.yml
+.dockerignore
+*.log
+
+# Sensitive Files & Local Environments
+*.env
+*.env.*
+*.pem
+*.key
+*.crt
+
+# Local Executables & Temporary Scripts
+*.sh
+!entrypoint.sh
