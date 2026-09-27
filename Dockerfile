@@ -1,6 +1,6 @@
 FROM teddysun/xray:latest AS xray-bin
 
-FROM envoyproxy/envoy:v1.31.10
+FROM envoyproxy/envoy:latest
 
 ENV TZ=Asia/Shanghai
 ENV PORT=8080
