@@ -6,15 +6,8 @@ static_resources:
         address: 0.0.0.0
         port_value: 8080
 
-    # Maximize buffer limits without crashing Xray (8MB per stream)
+    # Increase stream buffer limit (8MB) to eliminate bottleneck on high-speed downloads
     per_stream_buffer_limit_bytes: 8388608
-
-    # Low-latency TCP socket settings
-    socket_options:
-    - state: STATE_PREBIND
-      level: 6 # SOL_TCP
-      name: 1  # TCP_NODELAY
-      int_value: 1
 
     filter_chains:
     - filters:
@@ -24,11 +17,11 @@ static_resources:
           stat_prefix: ingress_http
           use_remote_address: true
 
-          # Maximize HTTP/2 throughput settings for downstream clients
+          # Stream & Connection Window expansion (Prevents HTTP/2 stream stalls)
           http2_protocol_options:
             max_concurrent_streams: 2147483647
-            initial_stream_window_size: 1048576     # 1MB Stream Window
-            initial_connection_window_size: 2097152   # 2MB Connection Window
+            initial_stream_window_size: 1048576     # 1MB per stream
+            initial_connection_window_size: 2097152   # 2MB per connection
 
           route_config:
             name: local_route
@@ -114,8 +107,8 @@ static_resources:
         explicit_http_config:
           http2_protocol_options:
             max_concurrent_streams: 2147483647
-            initial_stream_window_size: 1048576     # 1MB Upstream Stream Window
-            initial_connection_window_size: 2097152   # 2MB Upstream Connection Window
+            initial_stream_window_size: 1048576     # 1MB Stream Window
+            initial_connection_window_size: 2097152   # 2MB Connection Window
     load_assignment:
       cluster_name: xray_trojan_xh
       endpoints:
@@ -137,8 +130,8 @@ static_resources:
         explicit_http_config:
           http2_protocol_options:
             max_concurrent_streams: 2147483647
-            initial_stream_window_size: 1048576     # 1MB Upstream Stream Window
-            initial_connection_window_size: 2097152   # 2MB Upstream Connection Window
+            initial_stream_window_size: 1048576     # 1MB Stream Window
+            initial_connection_window_size: 2097152   # 2MB Connection Window
     load_assignment:
       cluster_name: xray_vless_xh
       endpoints:
