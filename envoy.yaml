@@ -9,9 +9,9 @@ static_resources:
     # Maximize buffer allocation for high-bandwidth streaming (32 MB per stream)
     per_stream_buffer_limit_bytes: 33554432
 
-    # Enable socket options for immediate packet dispatch
+    # Enable socket options for immediate packet dispatch (TCP_NODELAY)
     socket_options:
-    - state: STATE_BOUND
+    - state: STATE_PREBIND
       level: 6 # SOL_TCP
       name: 1  # TCP_NODELAY
       int_value: 1
@@ -35,10 +35,6 @@ static_resources:
             initial_stream_window_size: 33554432     # 32 MB Stream Window
             initial_connection_window_size: 67108864 # 64 MB Connection Window
             override_stream_error_on_invalid_http_message: true
-            connection_keepalive:
-              interval: 10s
-              timeout: 3s
-              connection_idle_interval: 15s
 
           # HTTP/1.1 Options for WebSocket compatibility
           http_protocol_options:
@@ -77,8 +73,6 @@ static_resources:
                   cluster: xray_trojan_xh
                   timeout: 0s
                   idle_timeout: 0s
-                  max_stream_duration:
-                    max_stream_duration: 0s
 
               - match:
                   prefix: "/vlxh"
@@ -86,8 +80,6 @@ static_resources:
                   cluster: xray_vless_xh
                   timeout: 0s
                   idle_timeout: 0s
-                  max_stream_duration:
-                    max_stream_duration: 0s
 
           http_filters:
           - name: envoy.filters.http.router
@@ -153,9 +145,6 @@ static_resources:
             max_concurrent_streams: 2147483647
             initial_stream_window_size: 33554432     # 32 MB Stream Window
             initial_connection_window_size: 67108864 # 64 MB Connection Window
-            connection_keepalive:
-              interval: 10s
-              timeout: 3s
     load_assignment:
       cluster_name: xray_trojan_xh
       endpoints:
@@ -184,9 +173,6 @@ static_resources:
             max_concurrent_streams: 2147483647
             initial_stream_window_size: 33554432     # 32 MB Stream Window
             initial_connection_window_size: 67108864 # 64 MB Connection Window
-            connection_keepalive:
-              interval: 10s
-              timeout: 3s
     load_assignment:
       cluster_name: xray_vless_xh
       endpoints:
