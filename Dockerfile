@@ -1,6 +1,7 @@
 FROM teddysun/xray:latest AS xray-bin
 
-FROM envoyproxy/envoy:latest
+# FIX: Replaced 'latest' with a valid tag format
+FROM envoyproxy/envoy:v1.31-latest
 
 ENV TZ=Asia/Shanghai
 ENV PORT=8080
